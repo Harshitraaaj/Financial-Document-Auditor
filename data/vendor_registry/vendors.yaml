@@ -1,0 +1,19 @@
+vendors:
+  - name: Acme Supplies Ltd
+    aliases: ["Acme Supplies", "ACME SUPPLIES LTD."]
+    approved: true
+    jurisdiction: UK
+    tax_rate: "0.20"
+    baseline:
+      mean_total_amount: "2500.00"
+      stddev_total_amount: "500.00"
+
+  - name: Contoso Services LLC
+    aliases: ["Contoso Services"]
+    approved: true
+    jurisdiction: US
+    tax_rate: "0.08"
+    baseline:
+      mean_total_amount: "8000.00"
+      stddev_total_amount: "1200.00"
+

@@ -1,0 +1,41 @@
+rules:
+  - rule_id: VENDOR_APPROVED
+    version: "1.0.0"
+    name: Vendor must be approved
+    description: The vendor must appear in the approved vendor registry before the invoice can be auto-approved.
+    jurisdiction: global
+    effective_date: 2026-01-01
+    severity: high
+    condition: vendor_approved
+
+  - rule_id: TAX_RATE_VENDOR_MATCH
+    version: "1.0.0"
+    name: Tax rate must match vendor jurisdiction
+    description: Tax amount divided by subtotal must match the registered vendor tax rate.
+    jurisdiction: global
+    effective_date: 2026-01-01
+    severity: high
+    condition: tax_rate_matches_vendor
+
+  - rule_id: HIGH_VALUE_LIMIT
+    version: "1.0.0"
+    name: Invoice total must not exceed local approval limit
+    description: Invoices above the configured local approval limit require human review or compliance hold.
+    jurisdiction: global
+    effective_date: 2026-01-01
+    severity: medium
+    condition: amount_less_than_or_equal
+    field: total_amount
+    expected: "100000.00"
+
+  - rule_id: ALLOWED_CURRENCY
+    version: "1.0.0"
+    name: Currency must be allowed
+    description: The invoice currency must be one of the configured currencies for local processing.
+    jurisdiction: global
+    effective_date: 2026-01-01
+    severity: medium
+    condition: currency_allowed
+    parameters:
+      allowed: ["USD", "EUR", "GBP", "INR"]
+
