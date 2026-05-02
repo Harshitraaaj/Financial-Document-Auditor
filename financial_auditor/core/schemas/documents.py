@@ -6,7 +6,7 @@ from enum import StrEnum
 from pathlib import Path
 from typing import Any
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 
 class DocumentStatus(StrEnum):
@@ -50,11 +50,53 @@ class PreprocessingResult(BaseModel):
 
 
 class LineItem(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+
     description: str | None = None
     quantity: Decimal | None = None
     unit_price: Decimal | None = None
     amount: Decimal | None = None
     tax_rate: Decimal | None = None
+
+    @model_validator(mode="before")
+    @classmethod
+    def normalize_line_item_keys(cls, value: Any) -> Any:
+        if not isinstance(value, dict):
+            return value
+        normalized = dict(value)
+        if normalized.get("unit_price") is None:
+            for alias in ("price", "unit cost", "unit_cost", "rate"):
+                if alias in normalized:
+                    normalized["unit_price"] = normalized[alias]
+                    break
+        if normalized.get("amount") is None:
+            for alias in ("total", "line_total", "line amount", "line_amount", "extended_price"):
+                if alias in normalized:
+                    normalized["amount"] = normalized[alias]
+                    break
+        return normalized
+
+    @field_validator("quantity", "unit_price", "amount", "tax_rate", mode="before")
+    @classmethod
+    def parse_decimalish(cls, value: Any) -> Any:
+        if value is None or isinstance(value, Decimal):
+            return value
+        if isinstance(value, str):
+            cleaned = value.strip().replace(",", "")
+            for symbol in ("$", "£", "€", "₹"):
+                cleaned = cleaned.replace(symbol, "")
+            if cleaned.endswith("%"):
+                cleaned = cleaned[:-1]
+            return cleaned or None
+        return value
+
+    @model_validator(mode="after")
+    def derive_missing_line_amount(self) -> "LineItem":
+        if self.amount is None and self.quantity is not None and self.unit_price is not None:
+            self.amount = self.quantity * self.unit_price
+        if self.unit_price is None and self.amount is not None and self.quantity not in {None, Decimal("0")}:
+            self.unit_price = self.amount / self.quantity
+        return self
 
 
 class ExtractedInvoice(BaseModel):
@@ -98,4 +140,3 @@ class VerifiedExtraction(BaseModel):
     annotations: dict[str, FieldAnnotation] = Field(default_factory=dict)
     raw_primary_response: str | None = None
     raw_verifier_response: str | None = None
-

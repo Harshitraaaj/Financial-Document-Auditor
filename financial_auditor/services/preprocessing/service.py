@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 from pathlib import Path
 
 from unstructured.partition.auto import partition
@@ -16,18 +17,47 @@ class PreprocessingService:
         suffix = path.suffix.lower()
         true_document_type = self._detect_type(suffix, declared_document_type)
         elements = partition(filename=str(path))
-        text_parts = [str(element).strip() for element in elements if str(element).strip()]
-        text = "\n".join(text_parts)
+        text, table_count = self._serialize_elements(elements)
         quality = self._score_quality(text)
         pages = [PageQuality(page_number=1, ocr_confidence=quality)]
         return PreprocessingResult(
             document_id=document_id,
             text=text,
-            layout_metadata={"source": "unstructured", "element_count": len(elements), "file_suffix": suffix},
+            layout_metadata={
+                "source": "unstructured",
+                "element_count": len(elements),
+                "table_count": table_count,
+                "file_suffix": suffix,
+            },
             pages=pages,
             true_document_type=true_document_type,
             quality_low=quality < self.settings.ocr_confidence_threshold,
         )
+
+    def _serialize_elements(self, elements: list[object]) -> tuple[str, int]:
+        text_parts: list[str] = []
+        table_count = 0
+        for index, element in enumerate(elements, start=1):
+            raw_text = str(element).strip()
+            if not raw_text:
+                continue
+            category = type(element).__name__
+            normalized_text = self._normalize_financial_table_text(raw_text)
+            if category.lower() == "table":
+                table_count += 1
+                text_parts.append(f"[TABLE {table_count}]\n{normalized_text}\n[/TABLE {table_count}]")
+            else:
+                text_parts.append(f"[ELEMENT {index}: {category}]\n{normalized_text}")
+        return "\n\n".join(text_parts), table_count
+
+    @staticmethod
+    def _normalize_financial_table_text(text: str) -> str:
+        normalized = re.sub(r"(?i)(total)(item\s+\d+)", r"\1\n\2", text)
+        normalized = re.sub(r"(?i)(\$?\d+(?:\.\d{2})?)(item\s+\d+)", r"\1\n\2", normalized)
+        normalized = re.sub(r"(?i)(item\s+\d+)\s*(\d+)\s*([$£€₹]\s*\d+(?:\.\d{2})?)", r"\1 | \2 | \3", normalized)
+        normalized = re.sub(r"([$£€₹]\s*\d+(?:\.\d{2})?)\s+([$£€₹]\s*\d+(?:\.\d{2})?)", r"\1 | \2", normalized)
+        normalized = re.sub(r"[ \t]+", " ", normalized)
+        return normalized.strip()
 
     @staticmethod
     def _detect_type(suffix: str, declared_document_type: str) -> str:
@@ -48,4 +78,3 @@ class PreprocessingService:
         density = min(len(text) / 1000, 1.0)
         readability = alpha_numeric / max(printable, 1)
         return max(0.0, min(1.0, 0.55 * readability + 0.45 * density))
-
