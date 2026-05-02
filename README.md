@@ -26,6 +26,18 @@ uvicorn financial_auditor.api.main:app --reload
 
 Open `http://127.0.0.1:8000/docs`.
 
+## Frontend Dashboard
+
+```powershell
+cd frontend
+npm install
+npm run dev
+```
+
+Open `http://127.0.0.1:5173`.
+
+The Vite dev server proxies `/api/*` to the local FastAPI backend at `http://127.0.0.1:8000`.
+
 ## Local Processing Flow
 
 1. Upload a document through `POST /documents`.

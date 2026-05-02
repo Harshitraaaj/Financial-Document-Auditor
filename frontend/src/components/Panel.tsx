@@ -1,0 +1,24 @@
+import type { ReactNode } from 'react';
+
+interface PanelProps {
+  title: string;
+  description?: string;
+  action?: ReactNode;
+  children: ReactNode;
+}
+
+export function Panel({ title, description, action, children }: PanelProps) {
+  return (
+    <section className="rounded-lg border border-slate-200 bg-white shadow-panel">
+      <div className="flex flex-col gap-3 border-b border-slate-200 px-5 py-4 sm:flex-row sm:items-start sm:justify-between">
+        <div>
+          <h2 className="text-sm font-semibold text-slate-950">{title}</h2>
+          {description ? <p className="mt-1 text-sm text-slate-500">{description}</p> : null}
+        </div>
+        {action}
+      </div>
+      <div className="p-5">{children}</div>
+    </section>
+  );
+}
+

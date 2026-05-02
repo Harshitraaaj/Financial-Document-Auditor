@@ -21,6 +21,11 @@ build/
 venv/
 env/
 
+# Frontend
+frontend/node_modules/
+frontend/dist/
+frontend/.vite/
+
 # Local runtime state
 runtime/
 *.sqlite3
@@ -42,4 +47,3 @@ runtime/
 Thumbs.db
 .idea/
 .vscode/
-
