@@ -16,7 +16,10 @@ class SchemaBinder:
 
         if verifier_raw:
             verifier = _loads(verifier_raw)
-            extraction_payload = verifier.get("corrected_invoice", verifier.get("invoice", extraction_payload))
+            verifier_payload = verifier.get("corrected_invoice", verifier.get("invoice", {}))
+            if not isinstance(verifier_payload, dict):
+                raise ValueError("Verifier invoice payload must be a JSON object")
+            extraction_payload = _deep_merge(extraction_payload, verifier_payload)
             annotations.update(_annotations_from_payload(verifier.get("field_annotations", {})))
 
         try:
@@ -56,7 +59,16 @@ def _annotations_from_payload(payload: dict[str, Any]) -> dict[str, FieldAnnotat
     return annotations
 
 
+def _deep_merge(base: dict[str, Any], override: dict[str, Any]) -> dict[str, Any]:
+    merged = dict(base)
+    for key, value in override.items():
+        if isinstance(value, dict) and isinstance(merged.get(key), dict):
+            merged[key] = _deep_merge(merged[key], value)
+        else:
+            merged[key] = value
+    return merged
+
+
 def _null_invalid_payload(payload: dict[str, Any]) -> dict[str, Any]:
     allowed = set(ExtractedInvoice.model_fields)
     return {key: value for key, value in payload.items() if key in allowed}
-

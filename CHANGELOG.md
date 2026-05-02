@@ -26,3 +26,10 @@ The project follows semantic versioning:
 - Preserved invoice line item prices when LLM output uses common table aliases such as `price` and `total`.
 - Improved preprocessing text normalization for compressed invoice table rows.
 - Tightened extraction and verification prompts to require `unit_price` and `amount` for line items.
+
+## [0.1.2] - 2026-05-02
+
+### Fixed
+
+- Merged partial verifier invoice responses into primary extraction results instead of replacing the full invoice object.
+- Preserved primary fields such as vendor, invoice number, dates, currency, subtotal, and total when verifier only returns corrected fields.
