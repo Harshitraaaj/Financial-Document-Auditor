@@ -40,15 +40,19 @@ The Vite dev server proxies `/api/*` to the local FastAPI backend at `http://127
 
 ## Local Processing Flow
 
-1. Upload a document through `POST /documents`.
-2. Ingestion stores the original file, hashes it, creates a local SQLite record, and appends an audit event.
-3. Preprocessing extracts text and estimates quality.
-4. Extraction calls Groq for primary extraction, then a verifier pass.
-5. The schema binder coerces results into strict Pydantic models and records field annotations.
-6. Validation runs deterministic schema, arithmetic, business-rule, and duplicate checks.
-7. Anomaly scoring compares against local vendor baselines.
-8. Confidence routing decides auto-approve, human review, compliance hold, or hard reject.
-9. Reporting renders machine-readable and human-readable audit outputs.
+The system follows a strict, unidirectional processing pipeline:
+
+**Ingestion → Preprocessing → Extraction → Validation → Anomaly Detection → Confidence Scoring → Routing → Reporting → Audit Trail**
+
+1. **Ingestion**: Upload a document via `POST /documents`. The system stores the original file, generates a hash, creates a local SQLite record, and appends the first audit event.
+2. **Preprocessing**: Extracts raw text using Unstructured and estimates document page quality.
+3. **Extraction (LLM-only)**: Calls Groq for primary extraction, followed by an independent verifier pass.
+4. **Schema Binding**: Coerces the extracted JSON into strict Pydantic models and records field-level extraction annotations, dropping invalid fields while preserving properly-typed nested objects.
+5. **Validation (Deterministic)**: Pure deterministic logic. Runs strict schema validation, arithmetic checks, YAML-driven business rules, and duplicate detection. No LLMs are used here.
+6. **Anomaly Detection**: Compares extracted values against local vendor historical baselines.
+7. **Confidence Scoring & Routing (HITL)**: Assigns final confidence scores based on validation results, and decides the next routing action (auto-approve, human review, compliance hold, or hard reject).
+8. **Reporting**: Renders the final outcome into machine-readable JSON and human-readable audit reports.
+9. **Audit Trail**: Throughout the process, every single action is appended into a hash-chained, immutable audit log.
 
 ## Boundaries
 
