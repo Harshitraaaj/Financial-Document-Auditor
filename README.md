@@ -71,6 +71,14 @@ The Vite dev server proxies `/api/*` to the local FastAPI backend at `http://127
 pytest
 ```
 
+## Reset Local Runtime Data
+
+```powershell
+python reset_runtime_data.py
+```
+
+This clears local testing artifacts under `runtime/` and empties SQLite document and duplicate-index tables, allowing the same invoice to be uploaded again without duplicate warnings. Use `--dry-run` to preview what would be cleared.
+
 ## Version Control
 
 Source-controlled artifacts include application code, Pydantic schema version metadata, tests, YAML rules, prompt templates, and documentation. Local runtime state, secrets, uploaded documents, logs, and SQLite databases are excluded by `.gitignore`.

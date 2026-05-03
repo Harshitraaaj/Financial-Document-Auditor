@@ -33,3 +33,10 @@ The project follows semantic versioning:
 
 - Merged partial verifier invoice responses into primary extraction results instead of replacing the full invoice object.
 - Preserved primary fields such as vendor, invoice number, dates, currency, subtotal, and total when verifier only returns corrected fields.
+
+## [0.1.3] - 2026-05-03
+
+### Added
+
+- Added `reset_runtime_data.py` to clear local runtime test data and reset SQLite document and duplicate-index tables.
+- Added dry-run support and tests for safe local runtime reset behavior.
