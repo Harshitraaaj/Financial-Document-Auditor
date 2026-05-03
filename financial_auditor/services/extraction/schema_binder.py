@@ -22,10 +22,44 @@ class SchemaBinder:
             extraction_payload = _deep_merge(extraction_payload, verifier_payload)
             annotations.update(_annotations_from_payload(verifier.get("field_annotations", {})))
 
+        safe_payload = _null_invalid_payload(extraction_payload)
+
         try:
-            invoice = ExtractedInvoice.model_validate(extraction_payload)
+            invoice = ExtractedInvoice.model_validate(safe_payload)
         except ValidationError as exc:
-            invoice = ExtractedInvoice.model_construct(**_null_invalid_payload(extraction_payload))
+            from pydantic import TypeAdapter
+            from financial_auditor.core.schemas.documents import LineItem
+
+            valid_payload = {}
+            for field_name, field_info in ExtractedInvoice.model_fields.items():
+                if field_name not in safe_payload:
+                    continue
+                value = safe_payload[field_name]
+                if value is None:
+                    continue
+
+                if field_name == "line_items" and isinstance(value, list):
+                    valid_items = []
+                    item_adapter = TypeAdapter(LineItem)
+                    for item in value:
+                        try:
+                            valid_items.append(item_adapter.validate_python(item))
+                        except ValidationError:
+                            pass
+                    valid_payload["line_items"] = valid_items
+                    continue
+
+                try:
+                    adapter = TypeAdapter(field_info.annotation)
+                    valid_payload[field_name] = adapter.validate_python(value)
+                except ValidationError:
+                    pass
+
+            try:
+                invoice = ExtractedInvoice.model_validate(valid_payload)
+            except ValidationError:
+                invoice = ExtractedInvoice.model_construct(**valid_payload)
+
             annotations["schema"] = FieldAnnotation(
                 field_name="schema",
                 confidence=0,
