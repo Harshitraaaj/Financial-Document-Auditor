@@ -40,3 +40,11 @@ The project follows semantic versioning:
 
 - Added `reset_runtime_data.py` to clear local runtime test data and reset SQLite document and duplicate-index tables.
 - Added dry-run support and tests for safe local runtime reset behavior.
+
+## [0.1.4] - 2026-05-03
+
+### Fixed
+
+- Normalized verifier confidence values from percentages and labels into the 0.0 to 1.0 score range.
+- Repaired copied zero-confidence placeholders when extracted fields have direct source evidence and no hallucination or discrepancy flag.
+- Hardened document confidence scoring so source-supported fields are not treated as 0% confidence.

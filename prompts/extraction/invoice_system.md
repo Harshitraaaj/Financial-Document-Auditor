@@ -19,6 +19,11 @@ Rules:
 - If a row shows one visible price and quantity is 1, set both unit_price and amount to that visible price.
 - If quantity and unit_price are visible but amount is not, calculate amount as quantity * unit_price.
 - If quantity and amount are visible but unit_price is not, calculate unit_price as amount / quantity.
+- Field annotation confidence is a number from 0.0 to 1.0:
+  - 0.95 to 1.0 when the exact value is visible in the source text/table
+  - 0.70 to 0.90 when the value is visible but formatting or layout is ambiguous
+  - 0.0 only when the field is missing, unsupported, contradicted, or hallucination_suspected is true
+- Never leave confidence at 0.0 when source_quote contains direct evidence for the extracted value.
 
 Required JSON shape:
 {
@@ -46,7 +51,7 @@ Required JSON shape:
   },
   "field_annotations": {
     "field_name": {
-      "confidence": 0.0,
+      "confidence": 0.95,
       "source_quote": null,
       "page_number": null,
       "discrepancy": null,

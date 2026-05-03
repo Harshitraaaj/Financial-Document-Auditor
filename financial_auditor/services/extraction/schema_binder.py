@@ -32,6 +32,8 @@ class SchemaBinder:
                 extraction_failure=str(exc),
             )
 
+        annotations = _repair_annotation_confidence(invoice, annotations)
+
         return VerifiedExtraction(
             document_id=document_id,
             invoice=invoice,
@@ -67,6 +69,45 @@ def _deep_merge(base: dict[str, Any], override: dict[str, Any]) -> dict[str, Any
         else:
             merged[key] = value
     return merged
+
+
+def _repair_annotation_confidence(
+    invoice: ExtractedInvoice,
+    annotations: dict[str, FieldAnnotation],
+) -> dict[str, FieldAnnotation]:
+    repaired = dict(annotations)
+    for field_name in ExtractedInvoice.model_fields:
+        annotation = repaired.get(field_name)
+        if annotation is None:
+            continue
+        value = getattr(invoice, field_name)
+        if _has_source_supported_value(value, annotation):
+            repaired[field_name] = annotation.model_copy(update={"confidence": max(annotation.confidence, 0.95)})
+    if invoice.line_items:
+        line_item_annotations = [
+            annotation
+            for key, annotation in repaired.items()
+            if key.startswith("line_items") and _has_source_supported_value(annotation.source_quote, annotation)
+        ]
+        if line_item_annotations:
+            average = sum(annotation.confidence for annotation in line_item_annotations) / len(line_item_annotations)
+            repaired["line_items"] = FieldAnnotation(
+                field_name="line_items",
+                confidence=max(average, 0.95),
+                source_quote="Line item table",
+                hallucination_suspected=False,
+            )
+    return repaired
+
+
+def _has_source_supported_value(value: Any, annotation: FieldAnnotation) -> bool:
+    if value is None or value == "" or value == []:
+        return False
+    if annotation.confidence > 0:
+        return False
+    if annotation.hallucination_suspected or annotation.discrepancy or annotation.extraction_failure:
+        return False
+    return bool(annotation.source_quote and annotation.source_quote.strip())
 
 
 def _null_invalid_payload(payload: dict[str, Any]) -> dict[str, Any]:

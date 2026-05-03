@@ -83,6 +83,121 @@ def test_schema_binder_merges_partial_verifier_invoice_with_primary_invoice():
     assert [item.description for item in extraction.invoice.line_items] == ["Item 1", "Item 2", "Item 3"]
 
 
+def test_schema_binder_repairs_zero_confidence_when_source_evidence_is_present():
+    raw = """
+    {
+      "invoice": {
+        "vendor_name": "Acme Supplies Ltd",
+        "invoice_number": "ACM-2026-1050",
+        "invoice_date": "2026-05-03",
+        "currency": "GBP",
+        "subtotal_amount": 2500.00,
+        "tax_amount": 500.00,
+        "total_amount": 3000.00,
+        "line_items": [
+          {"description": "Office Printer Paper Boxes", "quantity": 20, "unit_price": 50.00, "amount": 1000.00}
+        ]
+      },
+      "field_annotations": {
+        "vendor_name": {
+          "confidence": 0.0,
+          "source_quote": "Vendor Name: Acme Supplies Ltd",
+          "page_number": null,
+          "discrepancy": null,
+          "hallucination_suspected": false
+        },
+        "invoice_number": {
+          "confidence": 0.0,
+          "source_quote": "Invoice Number: ACM-2026-1050",
+          "page_number": null,
+          "discrepancy": null,
+          "hallucination_suspected": false
+        },
+        "currency": {
+          "confidence": 0.0,
+          "source_quote": "Currency: GBP",
+          "page_number": null,
+          "discrepancy": null,
+          "hallucination_suspected": false
+        },
+        "total_amount": {
+          "confidence": 0.0,
+          "source_quote": "Total Amount: £3000.00",
+          "page_number": null,
+          "discrepancy": null,
+          "hallucination_suspected": false
+        }
+      }
+    }
+    """
+    extraction = SchemaBinder().bind("doc-1", raw)
+    assert extraction.annotations["vendor_name"].confidence == 0.95
+    assert extraction.annotations["invoice_number"].confidence == 0.95
+    assert extraction.annotations["currency"].confidence == 0.95
+    assert extraction.annotations["total_amount"].confidence == 0.95
+
+
+def test_schema_binder_keeps_zero_confidence_for_hallucinated_or_unsupported_fields():
+    raw = """
+    {
+      "invoice": {
+        "vendor_name": "Acme Supplies Ltd",
+        "invoice_number": "ACM-2026-1050",
+        "invoice_date": "2026-05-03",
+        "currency": "GBP",
+        "total_amount": 3000.00,
+        "purchase_order": "PO-78460",
+        "line_items": []
+      },
+      "field_annotations": {
+        "purchase_order": {
+          "confidence": 0.0,
+          "source_quote": "Purchase Order:",
+          "page_number": null,
+          "discrepancy": "Purchase order label is present but value is empty",
+          "hallucination_suspected": true
+        }
+      }
+    }
+    """
+    extraction = SchemaBinder().bind("doc-1", raw)
+    assert extraction.annotations["purchase_order"].confidence == 0.0
+
+
+def test_field_annotation_accepts_percent_and_label_confidence_values():
+    raw = """
+    {
+      "invoice": {
+        "vendor_name": "Acme Supplies Ltd",
+        "invoice_number": "ACM-2026-1050",
+        "invoice_date": "2026-05-03",
+        "currency": "GBP",
+        "total_amount": 3000.00,
+        "line_items": []
+      },
+      "field_annotations": {
+        "vendor_name": {
+          "confidence": "95%",
+          "source_quote": "Vendor Name: Acme Supplies Ltd",
+          "page_number": 1,
+          "discrepancy": null,
+          "hallucination_suspected": false
+        },
+        "invoice_number": {
+          "confidence": "high",
+          "source_quote": "Invoice Number: ACM-2026-1050",
+          "page_number": 1,
+          "discrepancy": null,
+          "hallucination_suspected": false
+        }
+      }
+    }
+    """
+    extraction = SchemaBinder().bind("doc-1", raw)
+    assert extraction.annotations["vendor_name"].confidence == 0.95
+    assert extraction.annotations["invoice_number"].confidence == 0.9
+
+
 def test_line_item_derives_missing_amount_from_quantity_and_unit_price():
     item = LineItem(description="Item 1", quantity=Decimal("2"), unit_price=Decimal("12.50"))
     assert item.amount == Decimal("25.00")

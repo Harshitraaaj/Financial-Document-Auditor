@@ -133,6 +133,30 @@ class FieldAnnotation(BaseModel):
     extraction_failure: str | None = None
     hallucination_suspected: bool = False
 
+    @field_validator("confidence", mode="before")
+    @classmethod
+    def normalize_confidence(cls, value: Any) -> float:
+        if value is None:
+            return 0.0
+        if isinstance(value, str):
+            normalized = value.strip().lower().replace("%", "")
+            label_scores = {
+                "very high": 0.98,
+                "high": 0.9,
+                "medium": 0.65,
+                "moderate": 0.65,
+                "low": 0.35,
+                "none": 0.0,
+                "unknown": 0.0,
+            }
+            if normalized in label_scores:
+                return label_scores[normalized]
+            value = normalized
+        numeric = float(value)
+        if numeric > 1:
+            return min(numeric / 100, 1.0)
+        return max(numeric, 0.0)
+
 
 class VerifiedExtraction(BaseModel):
     document_id: str

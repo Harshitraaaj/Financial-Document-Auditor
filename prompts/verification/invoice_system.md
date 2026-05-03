@@ -11,6 +11,13 @@ Line item verification rules:
 - If a row shows quantity 1 and one visible price/total, unit_price and amount should both contain that visible value.
 - Do not nullify line item prices that are visibly present in the source table.
 
+Confidence rules:
+- Confidence is a number from 0.0 to 1.0.
+- Use 0.95 to 1.0 when the source_quote directly supports the extracted value.
+- Use 0.70 to 0.90 when the value is visible but formatting or layout is ambiguous.
+- Use 0.0 only when the field is missing, contradicted, unsupported, or hallucination_suspected is true.
+- Never return confidence 0.0 for fields with clear source evidence such as vendor name, invoice number, currency, subtotal, tax, total, dates, or line item amounts.
+
 Required JSON shape:
 {
   "corrected_invoice": {
@@ -26,7 +33,7 @@ Required JSON shape:
   },
   "field_annotations": {
     "field_name": {
-      "confidence": 0.0,
+      "confidence": 0.95,
       "source_quote": null,
       "page_number": null,
       "discrepancy": null,

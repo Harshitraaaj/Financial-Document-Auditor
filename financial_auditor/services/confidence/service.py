@@ -48,8 +48,8 @@ class ConfidenceService:
         field_scores = []
         for field_name, weight in FIELD_CRITICALITY.items():
             annotation = extraction.annotations.get(field_name)
-            verifier_score = annotation.confidence if annotation else 0.65
             value = getattr(extraction.invoice, field_name, None)
+            verifier_score = _effective_verifier_score(annotation, value)
             schema_success = 1.0 if _has_present_value(value) else 0.0
             score = 0.40 * page_quality + 0.35 * verifier_score + 0.25 * schema_success
             field_scores.append(FieldConfidence(field_name=field_name, score=max(0.0, min(1.0, score)), criticality_weight=weight))
@@ -111,3 +111,20 @@ def _has_present_value(value: object) -> bool:
     if isinstance(value, list) and not value:
         return False
     return True
+
+
+def _effective_verifier_score(annotation: object, value: object) -> float:
+    if annotation is None:
+        return 0.65
+    confidence = getattr(annotation, "confidence", 0.0)
+    if confidence > 0:
+        return confidence
+    has_evidence = bool(getattr(annotation, "source_quote", None))
+    has_problem = bool(
+        getattr(annotation, "hallucination_suspected", False)
+        or getattr(annotation, "discrepancy", None)
+        or getattr(annotation, "extraction_failure", None)
+    )
+    if _has_present_value(value) and has_evidence and not has_problem:
+        return 0.95
+    return confidence
