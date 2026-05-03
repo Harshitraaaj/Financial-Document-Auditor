@@ -1,4 +1,6 @@
 import type { ReactNode } from 'react';
+import { HugeiconsIcon } from "@hugeicons/react";
+import { CgAlignBottom } from "react-icons/cg";
 import { ShieldCheck } from 'lucide-react';
 
 interface AppShellProps {
@@ -12,14 +14,14 @@ export function AppShell({ children }: AppShellProps) {
         <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-4 sm:px-6 lg:px-8">
           <div className="flex items-center gap-3">
             <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-slate-950 text-white">
-              <ShieldCheck className="h-5 w-5" aria-hidden="true" />
+              {/* <CgAlignBottom className="h-6 w-6" aria-hidden="true" /> */}
+              <img src="/logo3.svg" alt="Project Logo" className="h-6 w-6" />
             </div>
             <div>
               <h1 className="text-base font-semibold text-slate-950">AI Financial Document Auditor</h1>
-              <p className="text-sm text-slate-500">Local audit dashboard</p>
+              <p className="text-sm text-slate-500"><br></br></p>
             </div>
           </div>
-          <div className="hidden rounded-md bg-slate-100 px-3 py-2 text-sm text-slate-600 sm:block">FastAPI · Local</div>
         </div>
       </header>
       <main className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">{children}</main>

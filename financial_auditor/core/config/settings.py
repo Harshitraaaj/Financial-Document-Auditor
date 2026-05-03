@@ -19,6 +19,7 @@ class Settings(BaseSettings):
     groq_model: str = Field(default="llama-3.1-70b-versatile", alias="GROQ_MODEL")
     extraction_temperature: float = 0.0
     sqlite_path: Path | None = None
+    tesseract_path: str | None = Field(default=None, alias="TESSERACT_PATH")
 
     @property
     def storage_dir(self) -> Path:
